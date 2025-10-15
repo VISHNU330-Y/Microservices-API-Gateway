@@ -1,0 +1,51 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ms_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  gateway:
+    build: ./gateway
+    container_name: ms_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POLICY_URL=http://policy:7000/policy
+      - RETRIEVER_URL=http://retriever:7001/retrieve
+      - PROCESSOR_URL=http://processor:7002/process
+      - LOG_PATH=/app/logs/audit.jsonl
+      - RATE_LIMIT=5
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - policy
+      - retriever
+      - processor
+
+  policy:
+    build: ./policy
+    container_name: ms_policy
+    ports:
+      - "7000:7000"
+
+  retriever:
+    build: ./retriever
+    container_name: ms_retriever
+    ports:
+      - "7001:7001"
+
+  processor:
+    build: ./processor
+    container_name: ms_processor
+    ports:
+      - "7002:7002"
+
+volumes:
+  redis-data:
+
